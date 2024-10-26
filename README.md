@@ -16,7 +16,7 @@ The goals of this session are to (1) equip you with conceptual knowledge about t
 
 ## Tutorial
 
-The session is accompanied by a tutorial, which can be accessed [here](https://rawcdn.githack.com/intro-to-data-science-24/labs/02e4175f0b23aef7e2c79ca67cf1e7da29520e2b/session-03-tidyverse-functions/3-tidyverse-functions.html).
+The session is accompanied by a tutorial, which can be accessed [here](https://github.com/intro-to-data-science-24-workshop/03-Dates-and-times-with-lubridate-Bhattacharyya-Gazzaneo/blob/main/Presentation.html).
 
 
 ## Instructors
