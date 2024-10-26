@@ -1,0 +1,387 @@
+---
+title: "Working with Dates and Times in R"
+output: 
+  html_document:
+    theme: cerulean
+    highlight: tango
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup_packages, message=FALSE, warning=FALSE}
+#Loading required packages
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(nycflights13)
+```
+
+
+## Taming Time in R Using `Lubridate`
+
+### Simplifying the Complexities of Temporal Data
+
+---
+
+### The Challenge of Dates and Times
+
+**Why are dates and times difficult to work with in data analysis?**
+
+- **Leap years**: Most years have 365 days, but leap years have 366 days. 
+- **Daylight Saving Time (DST)**: In regions that observe DST, one day has 23 hours and another has 25 hours.
+- **Geopolitical Factors**: Dates and times must reconcile the Earth's rotation and orbit with human-defined concepts like months, time zones, and DST.
+
+These inconsistencies and variations make working with dates and times in a programming context challenging.
+
+---
+
+### Introducing Lubridate
+
+**What is Lubridate?**
+
+- Lubridate is an R package that makes it **easier to work with dates and times**.
+- It is part of the **core Tidyverse**, a collection of R packages designed for data science.
+- Lubridate provides a consistent and **intuitive set of functions** for creating, manipulating, and analyzing dates and times.
+
+---
+
+### 1. Creating Dates and Times: From Strings
+
+
+### 1.1 Creating Date Objects
+
+ **Identify the order** of year (`y`), month (`m`), and day (`d`) in your dates. Arrange "y", "m", and "d" in the same order to form the name of the Lubridate function.
+ 
+ Use `ymd()`, `dmy()`, and `mdy()` to parse dates in different formats.
+
+**Example:**
+
+```{r}
+
+# Creating date objects
+date_example_1 <- ymd("2023-12-25")  # Year-Month-Day
+date_example_2 <- dmy("31-Jan-2017")  # Day-Month-Year
+date_example_3 <- mdy("January 31st, 2017")  # Month-Day-Year
+
+# Display the created date objects
+date_example_1
+date_example_2
+date_example_3
+```
+
+### 1.2 Creating Date-Time Objects
+
+Use `ymd_hms()` and `mdy_hms()` to parse date and time strings.
+
+**Example:**
+
+```{r}
+# Creating date-time objects
+datetime_example_1 <- ymd_hms("2023-12-25 10:30:00")  # December 25, 2023, at 10:30 AM
+datetime_example_2 <- mdy_hms("January 31st, 2017 15:45:00")  # January 31, 2017, at 3:45 PM
+
+# Display the created date-time objects
+datetime_example_1
+datetime_example_2
+```
+
+---
+
+### 2. Creating Dates and Times: From Individual Components
+
+**Using `make_date()` and `make_datetime()`:**
+
+- When date and time components are spread across multiple columns, use these functions.
+
+#### 2.1 Creating a Date
+
+**Example:** Creating a date from separate year, month, and day columns:
+
+```{r}
+# Creating a date object
+flights |>
+select(year, month, day) |>
+mutate(departure = make_date(year, month, day))
+```
+
+#### 2.2 Creating a Date-Time
+
+**Example:** Creating a date-time from separate year, month, day, hour, and minute columns:
+
+```{r}
+# Creating a date-time object
+flights |>
+select(year, month, day, hour, minute) |>
+mutate(departure = make_datetime(year, month, day, hour, minute))
+
+```
+
+---
+
+### 3. Converting between different date-time representations
+
+- **`as_datetime()`**: This function converts a date object into a date-time object, effectively adding a time component of midnight (00:00:00) to the date.
+- **`as_date()`**: This function converts a date-time object into a date object, dropping the time component.
+
+
+**Code Example:**
+
+```{R}
+# Get the current date-time and date
+current_datetime <- now()   # Current date and time
+current_date <- today()     # Current date
+current_datetime
+current_date
+
+# Convert current date-time to date
+converted_to_date <- as_date(current_datetime)  # Drops time
+# Convert current date to date-time
+converted_to_datetime <- as_datetime(current_date)  # Adds time (00:00:00)
+converted_to_date
+converted_to_datetime
+```
+
+---
+
+
+### 4. Accessing Date-Time Components
+
+**Getting and setting components:**
+
+- **Accessor functions:** `year()`, `month()`, `mday()`, `yday()`, `wday()`, `hour()`, `minute()`, `second()`
+- **Labels:** `label = TRUE` in `month()` and `wday()` returns abbreviated names; `abbr = FALSE` returns full names.
+
+**Code Example:**
+
+```{r}
+datetime <- ymd_hms("2026-07-08 12:34:56")
+year(datetime)
+month(datetime, label = TRUE)
+wday(datetime, label = TRUE, abbr = FALSE)
+```
+
+---
+
+
+### 5. Rounding Date-Times in Lubridate
+
+In Lubridate, the functions `floor_date()`, `round_date()`, and `ceiling_date()` provide effective ways to adjust a vector of date-times to nearby units of time, such as weeks, months, or years. This capability is particularly useful for data analysis, allowing for easier aggregation and reporting.
+
+#### 5.1 **`floor_date()`**
+
+The `floor_date()` function rounds each date-time to the beginning of the specified unit. For example, `floor_date(date_time_vector, "month")` gives the first day of the month.
+
+**Example:**
+
+```{r}
+library(lubridate)
+
+# Example date-time vector
+date_time_vector <- ymd_hms(c("2024-10-22 14:45:12", "2024-10-25 09:15:00"))
+
+# Rounding down to the first day of the month
+floored_dates <- floor_date(date_time_vector, "month")
+
+# Display the rounded date-times
+floored_dates
+```
+
+In this example, both date-times are rounded down to the first day of October 2024.
+
+#### 5.2 **`round_date()`**
+
+The `round_date()` function rounds each date-time to the nearest specified unit. For instance, `round_date(date_time_vector, "week")` gives the nearest Sunday.
+
+**Example:**
+
+```{r}
+# Rounding to the nearest week
+rounded_dates <- round_date(date_time_vector, "week")
+
+# Display the rounded date-times
+rounded_dates
+```
+In this case, the first date-time rounds to the nearest Sunday, resulting in 2024-10-20 UTC. The second date-time rounds to the next Sunday, which is 2024-10-27 UTC.
+
+
+#### 5.3 **`ceiling_date()`**
+
+The `ceiling_date()` function rounds each date-time up to the beginning of the next iteration of the specified unit. For example, `ceiling_date(date_time_vector, "year")` gives the first day of the following year.
+
+**Example:**
+
+```{r}
+# Rounding up to the first day of the following year
+ceiling_dates <- ceiling_date(date_time_vector, "year")
+
+# Display the rounded date-times
+ceiling_dates
+```
+
+
+Here, both date-times are rounded up to January 1, 2025, the start of the next year. 
+
+---
+
+Here’s a revised outline based on your preferences, keeping all the content intact:
+
+---
+
+### 6. Time Spans
+
+#### 6.1 Durations
+
+**Benefit**: Durations represent a fixed length of time in seconds, useful for precise calculations.They are always recorded in seconds. You can create durations using functions such as dseconds(), dminutes(), dhours(), ddays(), dweeks(), and dyears().
+
+It's important to note that while you can create durations for years and weeks, you cannot create durations for months. This is because the length of a month varies. You can perform arithmetic operations with durations. 
+
+```{r}
+dyears(1)
+#This creates a duration representing one year, which is equivalent to 31,557,600 seconds
+
+today() + ddays(1)
+#you can perform artihmetic calculations using durations
+```
+
+**Example**: Calculate the age of someone born on October 14, 1979.
+
+```{r}
+# Calculate age in years
+h_age <- today() - ymd("1979-10-14")
+as.duration(h_age) # Returns duration in seconds
+```
+
+**Note**: Adding a duration may yield unexpected results due to DST changes:
+
+```{r}
+one_am <- ymd_hms("2026-03-08 01:00:00", tz = "America/New_York")
+
+one_am
+#> [1] "2026-03-08 01:00:00 EST"
+one_am + ddays(1) # Adds a duration of 1 day
+#> [1] "2026-03-09 02:00:00 EDT"
+```
+
+**Explanation**: March 8 only has 23 hours because it's when Daylight Saving Time (DST) starts.
+
+#### 6.2 Periods
+
+**Benefit**: Periods handle time spans more intuitively by representing time in human units (days, months, years), thus avoiding pitfalls associated with DST and leap years. You can create periods using functions like hours(), days(), months(), years().
+
+**Example**: Using periods solves the unexpected result when adding durations:
+
+```{r}
+one_am + days(1) # Adds a period of 1 day
+#> [1] "2026-03-09 01:00:00 EDT"
+```
+
+**Creating Periods**:
+
+```{r}
+# Creating periods
+hours(c(12, 24)) # 12 and 24-hour periods
+#> [1] "12H 0M 0S" "24H 0M 0S"
+
+days(7) # One week
+#> [1] "7d 0H 0M 0S"
+
+months(1:6) # Months from 1 to 6
+#> [1] "1m 0d 0H 0M 0S" "2m 0d 0H 0M 0S" "3m 0d 0H 0M 0S" 
+#> [4] "4m 0d 0H 0M 0S" "5m 0d 0H 0M 0S" "6m 0d 0H 0M 0S"
+```
+
+You can add and multiply periods:
+
+```{r}
+# Adding and multiplying periods
+10 * (months(6) + days(1)) # 60 months and 10 days
+#> [1] "60m 10d 0H 0M 0S"
+
+days(50) + hours(25) + minutes(2) # 50 days, 25 hours, and 2 minutes
+#> [1] "50d 25H 2M 0S"
+```
+
+
+### 6.3 Intervals
+
+**Defining and using intervals:**
+
+Intervals are a crucial aspect of date-time manipulation in R, allowing you to define a span of time between two specific points (start and end). 
+
+- **Creation**: Use the operator `%--%` to create an interval from a start date to an end date.
+- **Calculation**: You can divide an interval by a period to calculate its length in various units (e.g., days, months).
+
+**Key Features of Intervals:**
+
+- **Flexibility**: Intervals can encompass varying lengths of time, making them useful for representing events that occur over specific periods.
+- **Overlap**: You can check if two intervals overlap, which is particularly useful for scheduling or comparing event timelines.
+
+**Code Example:**
+
+```{r}
+
+# Creating an interval for the year 2023
+year_2023 <- ymd("2023-01-01") %--% ymd("2024-01-01")
+
+# Calculate the number of days in the interval for 2023
+days_in_2023 <- year_2023 / days(1)
+print(days_in_2023) # Output: Number of days in 2023
+
+# Creating another interval for a specific event
+event_interval <- ymd_hms("2023-06-01 09:00:00") %--% ymd_hms("2023-06-01 17:00:00")
+
+# Checking the length of the event interval in hours
+event_length_in_hours <- event_interval / hours(1)
+print(event_length_in_hours) # Output: Number of hours for the event
+
+# Checking if two intervals overlap
+another_interval <- ymd_hms("2023-06-01 15:00:00") %--% ymd_hms("2023-06-01 18:00:00")
+overlap_check <- int_overlaps(event_interval, another_interval)
+print(overlap_check) # Output: TRUE if they overlap, FALSE otherwise
+```
+
+**Explanation**
+
+1. **Creating Intervals**: The interval for the entire year of 2023 is created using the `%--%` operator. This interval encompasses all days from January 1, 2023, to January 1, 2024.
+
+2. **Calculating Event Length**: The length of the interval is calculated in hours by dividing the event interval by `hours(1)`. It can be calculated in days by the interval by `days(1)`, resulting in the total count of days in 2023.
+
+3. **Overlap Check**: To see if two intervals overlap, the `int_overlaps()` function in `lubridate` checks for any overlapping time. This is useful for scheduling applications.
+
+---
+
+### 7. Time Zones 
+
+**The complexities of time zones:**
+
+- Ambiguous names: Everyday time zone names can be confusing (e.g., multiple places use "EST").
+- IANA time zones: R uses the IANA standard, which provides unambiguous names like "America/New_York".
+- Time zone as an attribute: In R, the time zone is an attribute that affects how a date-time is printed but not its underlying value.
+
+#### Changing Time Zones
+
+**Modifying time zone information:**
+
+- `with_tz()`: Changes the display but not the underlying time. Use when the time is correct but you want to see it in a different time zone.
+- `force_tz()`: Changes the underlying time. Use when the time zone is incorrect and needs to be fixed.
+
+**Code Example:**
+
+```{r}
+x <- ymd_hms("2024-06-01 12:00:00", tz = "America/New_York")
+with_tz(x, tzone = "Europe/London") # Displays in London time
+force_tz(x, tzone = "Europe/London") # Changes the time to London time
+```
+
+---
+
+### Conclusion 
+
+**Lubridate simplifies working with dates and times in R:**
+
+- It provides a consistent and intuitive framework.
+- It offers a wide range of functions to handle various tasks, from parsing to manipulation to analysis. 
+

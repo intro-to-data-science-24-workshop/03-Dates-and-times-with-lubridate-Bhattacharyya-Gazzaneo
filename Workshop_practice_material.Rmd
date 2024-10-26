@@ -1,0 +1,171 @@
+
+---
+title: "Workshop Practice Material "
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Practice Questions and Solutions (Solve using the nycflights13 dataset)
+
+```{r setup_packages, message=FALSE, warning=FALSE}
+#Loading required packages
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(nycflights13)
+```
+
+### Question 1: Analyzing Delays by Day of the Week
+
+**1.1.** Create a new column `dep_date` by combining the `year`, `month`, and `day` columns using `make_date()`.
+
+```{r}
+
+flights <- flights |>
+    mutate(dep_date = make_date(year, month, day))
+```
+
+**1.2.** Use the `wday()` accessor function to extract the day of the week from `dep_date`, creating a new column called `day_of_week`.
+
+```{r}
+flights <- flights |>
+    mutate(day_of_week = wday(dep_date, label = TRUE))
+```
+
+**1.3.** Calculate the average `dep_delay` by min for each day of the week. Which day has the highest average delay?
+
+```{r}
+avg_delay_by_day <- flights %>%
+    group_by(day_of_week) %>%
+    summarise(avg_delay = mean(dep_delay, na.rm = TRUE))
+
+```
+
+**1.4.** Create a bar graph visualizing the average departure delays for each day of the week.
+
+```{r}
+ggplot(avg_delay_by_day, aes(x = day_of_week, y = avg_delay)) +
+    geom_bar(stat = "identity") +
+    labs(title = "Average Departure Delay by Day of the Week")
+```
+
+---
+
+### Question 2: Seasonal Flight Patterns
+
+**2.1.** Create a new column `arr_date` using from the `year`, `month`, and `day` columns for arrival.
+
+```{r}
+flights <- flights %>%
+    mutate(arr_date = make_date(year, month, day))
+```
+
+**2.2.** Use the `month()` accessor function to categorize flights into seasons based on the `arr_date`.
+
+```{r}
+flights <- flights %>%
+    mutate(season = case_when(
+        month(arr_date) %in% c(12, 1, 2) ~ "Winter",
+        month(arr_date) %in% c(3, 4, 5) ~ "Spring",
+        month(arr_date) %in% c(6, 7, 8) ~ "Summer",
+        month(arr_date) %in% c(9, 10, 11) ~ "Fall"
+    ))
+```
+
+**2.3.** Analyze how the total number of flights varies by season. Generate a pie chart showing the proportion of flights for each season.
+
+```{r}
+flights_by_season <- flights %>%
+    group_by(season) %>%
+    summarise(total_flights = n()) %>%
+    mutate(percentage = total_flights / sum(total_flights) * 100)
+
+
+ggplot(flights_by_season, aes(x = "", y = percentage, fill = season)) +
+    geom_bar(stat = "identity") +
+    coord_polar(theta = "y") +
+    labs(title = "Proportion of Flights by Season",
+         fill = "Season") +
+    geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+              position = position_stack(vjust = 0.5)) +
+    theme_void()
+```
+
+---
+
+### Question 3: Flight Durations
+
+**3.1.** Calculate the actual flight duration from `arr_time` and `dep_time` in minutes. Create a new column called `actual_duration`.
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+flights <- flights |>
+  mutate(dep_time_dt = make_datetime(year, month, day, dep_time %/% 100, dep_time %% 100),
+         arr_time_dt = make_datetime(year, month, day, arr_time %/% 100, arr_time %% 100),
+         actual_duration = as.duration(arr_time_dt - dep_time_dt) / dminutes(1)  # Convert to minutes
+    )
+
+```
+
+**3.2.** Investigate trends in flight durations over the months. Create a line plot to visualize average flight duration by month.
+
+```{r}
+avg_duration_by_month <- flights %>%
+    group_by(month) %>%
+    summarise(avg_duration = mean(actual_duration, na.rm = TRUE))
+
+ggplot(avg_duration_by_month, aes(x = month, y = avg_duration)) +
+    geom_line() +
+    labs(title = "Average Flight Duration by Month")
+```
+
+---
+
+### Question 5: Hourly Patterns of Departures
+
+**5.1.** Create a new column called `departure_hour`.
+
+```{r}
+flights <- flights %>%
+    mutate(departure_hour = hour(dep_time_dt))
+```
+
+**5.2.** Determine if there are peak hours for departures and plot to visualize the frequency of flights departing by hour.
+
+```{r}
+# Count the number of flights departing each hour
+flights_by_hour <- flights %>%
+    group_by(departure_hour) %>%
+    summarise(flight_count = n(), .groups = 'drop')
+
+# Plot the frequency of flights departing by hour
+ggplot(flights_by_hour, aes(x = departure_hour, y = flight_count)) +
+    geom_line(color = "blue", size = 1) +  # Customize line color and size
+    geom_point(color = "red", size = 2) +  # Optional: Add points for emphasis
+    labs(
+        title = "Frequency of Flights Departing by Hour",
+        x = "Hour of Departure",
+        y = "Number of Flights"
+    ) +
+    theme_minimal()
+```
+
+**5.3.** Please plot the number of flights per week. 
+
+```{r}
+flights_dt <- flights |>
+  filter(!is.na(dep_time_dt)) # Filter out any rows with NA dep_time
+
+# Plotting the number of flights per week
+weekly_flights <- flights_dt %>%
+  count(week = floor_date(dep_time_dt, "week"))
+
+ggplot(weekly_flights, aes(x = week, y = n)) +
+  geom_line(color = "blue") +
+  geom_point(color = "blue") +
+  labs(title = "Number of Flights per Week", x = "Week", y = "Number of Flights")
+```
+---
+
